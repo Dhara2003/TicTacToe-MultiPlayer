@@ -8,7 +8,9 @@ const MultiPlayerTicTacToe = () => {
   const [gameBoard, setGameBoard] = useState([]);
   const [scores, setScores] = useState({});
   const [lock, setLock] = useState(false);
+  const [winningCells, setWinningCells] = useState([]); 
   const titleRef = useRef(null);
+
   const getPlayerSymbol = (index) => String.fromCharCode(65 + index);
 
   const getBoardSize = (players) => {
@@ -21,6 +23,7 @@ const MultiPlayerTicTacToe = () => {
     setGameBoard(newBoard);
     setCurrentPlayer(0);
     setLock(false);
+    setWinningCells([]); 
     if (titleRef.current) {
       titleRef.current.innerHTML = "Multi-Player Tic Tac Toe";
     }
@@ -46,7 +49,6 @@ const MultiPlayerTicTacToe = () => {
     initializeBoard(newSize);
   }, [playerCount]);
 
- 
   const handlePlayerCountChange = (count) => {
     setPlayerCount(count);
     const newSize = getBoardSize(count);
@@ -54,51 +56,59 @@ const MultiPlayerTicTacToe = () => {
     initializeScores(count);
     initializeBoard(newSize);
   };
-
- 
   const checkWin = (board, row, col, symbol) => {
     const size = board.length;
-    
-    
-    for (let c = 0; c <= size - 4; c++) {
+    const winCondition = size === 3 ? 3 : 4;
+    for (let c = 0; c <= size - winCondition; c++) {
       let count = 0;
-      for (let i = 0; i < 4; i++) {
-        if (board[row][c + i] === symbol) count++;
+      let winningCells = [];
+      for (let i = 0; i < winCondition; i++) {
+        if (board[row][c + i] === symbol) {
+          count++;
+          winningCells.push([row, c + i]);
+        }
       }
-      if (count === 4) return true;
+      if (count === winCondition) return winningCells;
     }
-
-  
-    for (let r = 0; r <= size - 4; r++) {
+    for (let r = 0; r <= size - winCondition; r++) {
       let count = 0;
-      for (let i = 0; i < 4; i++) {
-        if (board[r + i][col] === symbol) count++;
-      }
-      if (count === 4) return true;
-    }
-
-  
-    for (let r = 0; r <= size - 4; r++) {
-      for (let c = 0; c <= size - 4; c++) {
-        let count = 0;
-        for (let i = 0; i < 4; i++) {
-          if (board[r + i][c + i] === symbol) count++;
+      let winningCells = [];
+      for (let i = 0; i < winCondition; i++) {
+        if (board[r + i][col] === symbol) {
+          count++;
+          winningCells.push([r + i, col]);
         }
-        if (count === 4) return true;
       }
+      if (count === winCondition) return winningCells;
     }
-
-    for (let r = 0; r <= size - 4; r++) {
-      for (let c = size - 1; c >= 3; c--) {
+    for (let r = 0; r <= size - winCondition; r++) {
+      for (let c = 0; c <= size - winCondition; c++) {
         let count = 0;
-        for (let i = 0; i < 4; i++) {
-          if (board[r + i][c - i] === symbol) count++;
+        let winningCells = [];
+        for (let i = 0; i < winCondition; i++) {
+          if (board[r + i][c + i] === symbol) {
+            count++;
+            winningCells.push([r + i, c + i]);
+          }
         }
-        if (count === 4) return true;
+        if (count === winCondition) return winningCells;
+      }
+    }
+    for (let r = 0; r <= size - winCondition; r++) {
+      for (let c = size - 1; c >= winCondition - 1; c--) {
+        let count = 0;
+        let winningCells = [];
+        for (let i = 0; i < winCondition; i++) {
+          if (board[r + i][c - i] === symbol) {
+            count++;
+            winningCells.push([r + i, c - i]);
+          }
+        }
+        if (count === winCondition) return winningCells;
       }
     }
 
-    return false;
+    return null;
   };
 
   const handleCellClick = (row, col) => {
@@ -109,8 +119,10 @@ const MultiPlayerTicTacToe = () => {
     newBoard[row][col] = symbol;
     setGameBoard(newBoard);
 
-    if (checkWin(newBoard, row, col, symbol)) {
+    const winningSequence = checkWin(newBoard, row, col, symbol);
+    if (winningSequence) {
       setLock(true);
+      setWinningCells(winningSequence); 
       titleRef.current.innerHTML = `Player ${symbol} Wins!`;
       const newScores = { ...scores };
       newScores[symbol]++;
@@ -165,15 +177,18 @@ const MultiPlayerTicTacToe = () => {
       <div className="board">
         {gameBoard.map((row, rowIndex) => (
           <div key={rowIndex} className="row">
-            {row.map((cell, colIndex) => (
-              <div
-                key={colIndex}
-                className={`boxes ${cell !== " " ? "filled" : ""}`}
-                onClick={() => handleCellClick(rowIndex, colIndex)}
-              >
-                {cell !== " " && <span className="player-symbol">{cell}</span>}
-              </div>
-            ))}
+            {row.map((cell, colIndex) => {
+              const isWinningCell = winningCells.some(([r, c]) => r === rowIndex && c === colIndex);
+              return (
+                <div
+                  key={colIndex}
+                  className={`boxes ${cell !== " " ? "filled" : ""} ${isWinningCell ? "winning-cell" : ""}`}
+                  onClick={() => handleCellClick(rowIndex, colIndex)}
+                >
+                  {cell !== " " && <span className="player-symbol">{cell}</span>}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>

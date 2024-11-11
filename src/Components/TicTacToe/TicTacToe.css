@@ -161,3 +161,8 @@
         font-size: 14px;
     }
 }
+.winning-cell {
+    background-color :   lightcyan; 
+    border: 2px solid red; 
+  }
+  
